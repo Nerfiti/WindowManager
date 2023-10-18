@@ -5,21 +5,34 @@ RELEASEFLAGS = -O3
 TARGET = WindowManager.out
 
 all:
-	g++ 								  \
-		./src/main.cpp 					  \
-		./src/Widgets/Windows/Windows.cpp \
-		./src/Widgets/Timer/Timer.cpp  	  \
-										  \
-	$(SFMLFLAGS) $(RELEASEFLAGS)		  \
-	-o $(TARGET)	 		      		  \
+	g++ 								  		\
+		./src/main.cpp 					  		\
+												\
+		./src/Widgets/Windows/Windows.cpp 		\
+		./src/Widgets/Windows/CanvasWindow.cpp  \
+		./src/Widgets/Timer/Timer.cpp  	  		\
+		./src/Widgets/Canvas/Canvas.cpp   		\
+		./src/Widgets/Canvas/ToolWidgets.cpp	\
+												\
+		./src/Tools/Tools.cpp					\
+										  		\
+										  		\
+	$(SFMLFLAGS) $(RELEASEFLAGS)		  		\
+	-o $(TARGET)	 		      		  		\
 										
 	./$(TARGET) 
 
 debug:
 	g++ 								  		\
 		./src/main.cpp 					  		\
+												\
 		./src/Widgets/Windows/Windows.cpp 		\
+		./src/Widgets/Windows/CanvasWindow.cpp  \
 		./src/Widgets/Timer/Timer.cpp  	  		\
+		./src/Widgets/Canvas/Canvas.cpp   		\
+		./src/Widgets/Canvas/ToolWidgets.cpp	\
+												\
+		./src/Tools/Tools.cpp					\
 										  		\
 	$(SFMLFLAGS) $(RELEASEFLAGS) $(DEBUGFLAGS)	\
 	-o $(TARGET)	 		      		  		\

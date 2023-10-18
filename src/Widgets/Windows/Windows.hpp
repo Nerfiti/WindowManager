@@ -1,3 +1,6 @@
+#ifndef WINDOWS_HPP
+#define WINDOWS_HPP
+
 #include "../Widget.hpp"
 #include "../Timer/Timer.hpp"
 
@@ -8,6 +11,8 @@ class Window : public Widget
     public:
         Window(sf::Vector2f pos, sf::Vector2f size, sf::Color color = sf::Color::Black);
         Window(float posX, float posY, float width, float height, sf::Color color = sf::Color::Black);
+
+        sf::Transform &Transform();
 
     protected:
         sf::RectangleShape windowRect_;
@@ -25,12 +30,12 @@ class FrameWindow : public Window
     
         void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
 
-        bool onMousePressed     (sf::Mouse::Button key) override;
-        bool onMouseMoved       (float x, float y)      override;
-        bool onMouseReleased    (sf::Mouse::Button key) override;
-        bool onKeyboardPressed  (sf::Keyboard::Key key) override;
-        bool onKeyboardReleased (sf::Keyboard::Key key) override;
-        bool onTime             (float deltaSeconds)    override;
+        bool onMousePressed     (sf::Mouse::Button key)                              override;
+        bool onMouseMoved       (int x, int y, const sf::Transform &parentTransform) override;
+        bool onMouseReleased    (sf::Mouse::Button key)                              override;
+        bool onKeyboardPressed  (sf::Keyboard::Key key)                              override;
+        bool onKeyboardReleased (sf::Keyboard::Key key)                              override;
+        bool onTime             (float deltaSeconds)                                 override;
 
         bool isOpen();
 
@@ -39,7 +44,7 @@ class FrameWindow : public Window
 
         void setCloseButtonTexture(const char *filename);
     
-    private:
+    protected:
         sf::RectangleShape frame_;
         sf::CircleShape    closeButton_;
         sf::Texture        closeButtonTexture_;
@@ -63,12 +68,12 @@ class ContainerWindow : public FrameWindow
         
         void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
 
-        bool onMousePressed     (sf::Mouse::Button key) override;
-        bool onMouseMoved       (float x, float y)      override;
-        bool onMouseReleased    (sf::Mouse::Button key) override;
-        bool onKeyboardPressed  (sf::Keyboard::Key key) override;
-        bool onKeyboardReleased (sf::Keyboard::Key key) override;
-        bool onTime             (float deltaSeconds)    override;  
+        bool onMousePressed     (sf::Mouse::Button key)                              override;
+        bool onMouseMoved       (int x, int y, const sf::Transform &parentTransform) override;
+        bool onMouseReleased    (sf::Mouse::Button key)                              override;
+        bool onKeyboardPressed  (sf::Keyboard::Key key)                              override;
+        bool onKeyboardReleased (sf::Keyboard::Key key)                              override;
+        bool onTime             (float deltaSeconds)                                 override;  
 
         void close() override;
 
@@ -88,7 +93,7 @@ class MainWindow : public ContainerWindow
 
         bool onTime(float deltaSeconds) override;
 
-        void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
+        void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform) override;
         
         void move(sf::Vector2f move) override;
         void close() override;
@@ -99,3 +104,5 @@ class MainWindow : public ContainerWindow
 };
 
 //---------------------------------------------------------------------------
+
+#endif //WINDOWS_HPP

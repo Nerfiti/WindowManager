@@ -76,14 +76,15 @@ bool FrameWindow::onMousePressed(sf::Mouse::Button key)
     if (mouseInWindow_ && key == sf::Mouse::Button::Left)
     {
         mousePressed_ = true;
+        sf::Vector2f localMousePos = transform_.getInverse().transformPoint(mousePos_);
 
         float radius = closeButton_.getRadius();
-        if (lengthInSquare(closeButton_.getPosition() - mousePos_) < radius * radius)
+        if (lengthInSquare(closeButton_.getPosition() - localMousePos) < radius * radius)
         {
             closeButtonCaptured_ = true;
             //closeButton_.setFillColor(sf::Color::Red);
         }
-        else if (frame_.getGlobalBounds().contains(mousePos_))
+        else if (frame_.getGlobalBounds().contains(localMousePos))
         {
             frameCaptured_ = true;
         }
@@ -94,29 +95,30 @@ bool FrameWindow::onMousePressed(sf::Mouse::Button key)
     return false;
 }
 
-bool FrameWindow::onMouseMoved(float x, float y)
+bool FrameWindow::onMouseMoved(int x, int y, const sf::Transform &parentTransform)
 {
-    sf::Vector2f newMousePos = transform_.getInverse().transformPoint(sf::Vector2f(x, y));
-    sf::Vector2f deltaMouse  = newMousePos - mousePos_; 
+    sf::Vector2f newMousePos =(parentTransform * transform_).getInverse().transformPoint(sf::Vector2f(x, y));
+
+    sf::Vector2f deltaMouse = newMousePos - mousePos_;
 
     if (frameCaptured_)
     {
-        move(deltaMouse);   
+        move(deltaMouse);
         return true;
     }
 
     mousePos_ = newMousePos;
-
-    if (windowRect_.getLocalBounds().contains(mousePos_))
+    
+    if (windowRect_.getLocalBounds().contains(newMousePos))
     {
         mouseInWindow_ = true;
 
         float radius = closeButton_.getRadius();
-        if (! (lengthInSquare(closeButton_.getPosition() - mousePos_) < radius * radius))
+        if (! (lengthInSquare(closeButton_.getPosition() - newMousePos) < radius * radius))
         {
             closeButtonCaptured_ = false;
         }
-
+        
         return true;
     }
     else
@@ -134,15 +136,16 @@ bool FrameWindow::onMouseReleased(sf::Mouse::Button key)
     if (mouseInWindow_ && key == sf::Mouse::Button::Left)
     {
         mousePressed_ = false;
+        sf::Vector2f localMousePos = transform_.getInverse().transformPoint(mousePos_);
 
-        if (lengthInSquare(closeButton_.getPosition() - mousePos_) < closeButton_.getRadius() && closeButtonCaptured_)
+        if (lengthInSquare(closeButton_.getPosition() - localMousePos) < closeButton_.getRadius() && closeButtonCaptured_)
         {
             windowRect_.setFillColor(color_);
             closeButtonCaptured_ = false;
 
             close();
         }
-        else if (frame_.getGlobalBounds().contains(mousePos_))
+        else if (frame_.getGlobalBounds().contains(localMousePos))
         {
             frameCaptured_ = false;
         }
@@ -175,7 +178,7 @@ void FrameWindow::close()
 
 void FrameWindow::move(sf::Vector2f move)
 {
-    transform_.translate(move);
+    transform_.translate(transform_.getInverse().transformPoint(move));
 }
 
 void FrameWindow::setCloseButtonTexture(const char *filename)
@@ -228,17 +231,19 @@ bool ContainerWindow::onMousePressed(sf::Mouse::Button key)
     return checked;
 }
 
-bool ContainerWindow::onMouseMoved(float x, float y)
+bool ContainerWindow::onMouseMoved(int x, int y, const sf::Transform &parentTransform)
 {
-    FrameWindow::onMouseMoved(x, y);
-    sf::Vector2f newCoords = transform_.getInverse().transformPoint(sf::Vector2f(x, y));
+    bool checked = FrameWindow::onMouseMoved(x, y, parentTransform);
+
+    sf::Transform finalTransform = parentTransform * transform_;
+    
     for (auto &it : windows_)
     {
-        if (it->onMouseMoved(newCoords.x, newCoords.y))
+        if (it->onMouseMoved(x, y, finalTransform))
             return true;
     }
 
-    return false;
+    return checked;
 }
 
 bool ContainerWindow::onMouseReleased(sf::Mouse::Button key)
@@ -315,7 +320,7 @@ void ContainerWindow::close()
 MainWindow::MainWindow(sf::RenderWindow &LinuxWindow, sf::Vector2f pos, sf::Vector2f size, float frameHeight, sf::Color color):
     ContainerWindow(pos, size, frameHeight, color),
     LinuxWindow_(LinuxWindow),
-    timer_(sf::Vector2f(1 - 0.1, 1 - 0.1), 0.1)
+    timer_(sf::Vector2f(0.05, 1 - 0.05), 0.05)
     {}
 
 MainWindow::MainWindow(sf::RenderWindow &LinuxWindow, float posX, float posY, float width, float height, float frameHeight, sf::Color color):
@@ -333,7 +338,9 @@ bool MainWindow::onTime(float deltaSeconds)
 void MainWindow::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform)
 {
     ContainerWindow::draw(canvas, parentTransform);
-    timer_.draw(canvas, parentTransform);
+ 
+    sf::Transform finalTransform = parentTransform * transform_;
+    timer_.draw(canvas, finalTransform);
 }
 
 void MainWindow::move(sf::Vector2f move)

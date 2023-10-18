@@ -1,4 +1,5 @@
 #include "./Widgets/Windows/Windows.hpp"
+#include "./Widgets/Windows/CanvasWindow.hpp"
 
 //------------------------------------------------------------------------------------------
 
@@ -16,6 +17,7 @@ int main()
     //System init
     sf::RenderWindow LinuxWindow(sf::VideoMode(WIDTH, HEIGHT), "", sf::Style::None);
     LinuxWindow.setPosition(sf::Vector2i(100, 100));
+    LinuxWindow.setFramerateLimit(144);
 
     sf::Transform defaultTransform = sf::Transform::Identity;
     defaultTransform.scale((sf::Vector2f)LinuxWindow.getSize());
@@ -24,21 +26,9 @@ int main()
     MainWindow mainWindow(LinuxWindow, 0, 0, 1, 1, 0.05, sf::Color::Green);
     
     //Adding windows
-    const int numberOfTestWindows = 6;
-    FrameWindow *testWindows[numberOfTestWindows] =                                 {
-            new ContainerWindow(  0, 0.2, 0.5, 0.5, 0.05, sf::Color::Yellow),
-            new     FrameWindow(0.6, 0.2, 0.4, 0.4, 0.05, sf::Color::White ),
-            new     FrameWindow(0.4, 0.6, 0.4, 0.4, 0.05, sf::Color::Black ),
-            
-            new     FrameWindow(  0, 0.2, 0.5, 0.5, 0.05, sf::Color::Blue  ),
-            new     FrameWindow(0.6, 0.2, 0.4, 0.4, 0.05, sf::Color::White ),
-            new     FrameWindow(0.1, 0.6, 0.4, 0.4, 0.05, sf::Color::Black )
-                                                                                };
-    for (int i = 0; i < numberOfTestWindows / 2; ++i)
-    {
-        mainWindow.addWindow(testWindows[i]);
-        ((ContainerWindow *)testWindows[0])->addWindow(testWindows[i + numberOfTestWindows / 2]);
-    }
+    ToolPalette palette(sf::Color::Black, sf::Color::White);
+    CanvasWindow canvas(sf::Vector2f(0.1, 0.05), sf::Vector2f(0.9, 0.95), 0, palette);
+    mainWindow.addWindow(&canvas);
 
     //Main loop
     sf::Clock timer;
@@ -52,10 +42,6 @@ int main()
         LinuxWindow.display();
         LinuxWindow.clear();        
     }
-
-    delete (ContainerWindow *)testWindows[0];
-    for (int i = 1; i < numberOfTestWindows; ++i)
-        delete testWindows[i];
 
     return 0;
 }
@@ -86,17 +72,18 @@ void pollEvents(sf::RenderWindow& LinuxWindow, ContainerWindow& mainWindow, sf::
             }
             case sf::Event::MouseMoved:
             {
-                sf::Vector2f mousePos = defaultTransform.getInverse().transformPoint(event.mouseMove.x, event.mouseMove.y);
-                mainWindow.onMouseMoved(mousePos.x, mousePos.y);
+                sf::Vector2f mousePos = sf::Transform::Identity.getInverse().transformPoint(event.mouseMove.x, event.mouseMove.y);
+                mainWindow.onMouseMoved(mousePos.x, mousePos.y, defaultTransform);
                 break;
             }
             case sf::Event::KeyPressed:
             {
                 mainWindow.onKeyboardPressed(event.key.code);
-
-                if (event.key.code == sf::Keyboard::Escape)
-                    LinuxWindow.close();
-
+                break;
+            }
+            case sf::Event::KeyReleased:
+            {
+                mainWindow.onKeyboardReleased(event.key.code);
                 break;
             }
         }

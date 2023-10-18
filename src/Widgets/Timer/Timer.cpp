@@ -24,11 +24,11 @@ void Timer::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform)
     canvas.draw(arrow_, parentTransform);
 }
 
-bool Timer::onMousePressed     (sf::Mouse::Button key) {return false;}
-bool Timer::onMouseMoved       (float x, float y)      {return false;}
-bool Timer::onMouseReleased    (sf::Mouse::Button key) {return false;}
-bool Timer::onKeyboardPressed  (sf::Keyboard::Key key) {return false;}
-bool Timer::onKeyboardReleased (sf::Keyboard::Key key) {return false;}
+bool Timer::onMousePressed     (sf::Mouse::Button key)                              {return false;}
+bool Timer::onMouseMoved       (int x, int y, const sf::Transform &parentTransform) {return false;}
+bool Timer::onMouseReleased    (sf::Mouse::Button key)                              {return false;}
+bool Timer::onKeyboardPressed  (sf::Keyboard::Key key)                              {return false;}
+bool Timer::onKeyboardReleased (sf::Keyboard::Key key)                              {return false;}
 
 bool Timer::onTime (float deltaSeconds)
 {

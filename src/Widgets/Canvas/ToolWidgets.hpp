@@ -1,14 +1,13 @@
-#ifndef TIMER_HPP
-#define TIMER_HPP
+#ifndef TOOL_WIDGETS_HPP
+#define TOOL_WIDGETS_HPP
 
 #include "../Widget.hpp"
+#include "../../Tools/Tools.hpp"
 
-//-------------------------------------------------------------
-
-class Timer : public Widget 
+class ToolWidget : public Widget
 {
     public:
-        Timer(sf::Vector2f position, float size);
+        ToolWidget(ToolPalette &palette);
 
         virtual void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
 
@@ -20,10 +19,14 @@ class Timer : public Widget
         virtual bool onTime             (float deltaSeconds)                                 override;
 
     private:
-        sf::CircleShape    circle_;
-        sf::RectangleShape arrow_;
+        ToolPalette &palette_;
+
+        static const sf::Keyboard::Key PenKey      = sf::Keyboard::Key::P;
+        static const sf::Keyboard::Key EraserKey   = sf::Keyboard::Key::E;
+        static const sf::Keyboard::Key RectKey     = sf::Keyboard::Key::R;
+        static const sf::Keyboard::Key PolylineKey = sf::Keyboard::Key::B;
+        static const sf::Keyboard::Key LineKey     = sf::Keyboard::Key::L;
+
 };
 
-//-------------------------------------------------------------
-
-#endif //TIMER_HPP
+#endif //TOOL_WIDGETS_HPP
