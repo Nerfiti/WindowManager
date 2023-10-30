@@ -1,18 +1,15 @@
+#include <iostream>
 #include <math.h>
 
 #include "Tools.hpp"
 
-static float length(sf::Vector2f vec)
-{
-    return sqrt(vec.x * vec.x + vec.y * vec.y);
-}
+static float length(sf::Vector2f vec) { return sqrt(vec.x * vec.x + vec.y * vec.y); }
 
-static void ConnectTwoPoints(sf::RenderTarget &target, sf::Vector2f point1, sf::Vector2f point2, float thickness, sf::Color color)
+static void getLineBetweenTwoPoints(sf::Vector2f point1, sf::Vector2f point2, sf::RectangleShape &outRect)
 {
-    sf::RectangleShape connection = sf::RectangleShape(sf::Vector2f(length(point2 - point1), thickness));
-    connection.setFillColor(color);
-    connection.setOrigin(sf::Vector2f(0, thickness / 2));
-    connection.setPosition(point1);
+    sf::Vector2f size = outRect.getSize();
+    outRect.setSize(sf::Vector2f(length(point2 - point1), size.y));
+    outRect.setPosition(point1);
     
     float tangens = (point2.y - point1.y) / (point2.x - point1.x);
     float angle   = atan(tangens) * 180 / M_PI;
@@ -20,7 +17,16 @@ static void ConnectTwoPoints(sf::RenderTarget &target, sf::Vector2f point1, sf::
     if (point2.x < point1.x)
         angle += 180;
 
-    connection.rotate(angle);
+    outRect.setRotation(angle);
+}
+
+static void ConnectTwoPoints(sf::RenderTarget &target, sf::Vector2f point1, sf::Vector2f point2, float thickness, sf::Color color)
+{
+    sf::RectangleShape connection(sf::Vector2f(0, thickness));
+    connection.setFillColor(color);
+    connection.setOrigin(sf::Vector2f(0, thickness / 2));
+
+    getLineBetweenTwoPoints(point1, point2, connection);
 
     target.draw(connection); 
 }
@@ -28,234 +34,345 @@ static void ConnectTwoPoints(sf::RenderTarget &target, sf::Vector2f point1, sf::
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-void Tool::onSecondaryButton  (ButtonState state, sf::Vector2f position, Canvas &canvas) {}
-void Tool::onModifier1        (ButtonState state, sf::Vector2f position, Canvas &canvas) {}
-void Tool::onModifier2        (ButtonState state, sf::Vector2f position, Canvas &canvas) {}
-void Tool::onModifier3        (ButtonState state, sf::Vector2f position, Canvas &canvas) {}
-void Tool::onMove             (sf::Vector2f position, Canvas &canvas) {}
-void Tool::onConfirm          (sf::Vector2f position, Canvas &canvas) {}
-void Tool::onCancel           (sf::Vector2f position, Canvas &canvas) {}
+void Tool::onSecondaryButton  (ControlState state, sf::Vector2f position, Canvas &canvas) {}
+void Tool::onModifier1        (ControlState state,    Canvas &canvas)                     {}
+void Tool::onModifier2        (ControlState state,    Canvas &canvas)                     {}
+void Tool::onModifier3        (ControlState state,    Canvas &canvas)                     {}
+void Tool::onMove             (sf::Vector2f position, Canvas &canvas)                     {}
+void Tool::onConfirm          (Canvas &canvas)                                            {}
+void Tool::onCancel           ()                                                          {}
 
 Widget *Tool::getWidget()     { return nullptr; }
 
-void Tool::preview(sf::RenderTarget &window, sf::Vector2f position) {}
-
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-void ToolPen::onMainButton(ButtonState state, sf::Vector2f position, Canvas &canvas)
-{    
-    if (state == ButtonState::Released)
+ToolPen::ToolPen():
+    settings_   (ToolSettings{.color_ = sf::Color::Black, .thickness_ = 1}),
+    stencil_    (),
+    prevPoint_  (),
+    isBrushDown_(false)
+    { updateStencil(); }
+
+void ToolPen::onMainButton(ControlState state, sf::Vector2f position, Canvas &canvas)
+{   
+    if (state.state == ControlState::ButtonState::Released)
+    {
+        onCancel();
         return;
+    }
 
     sf::RenderTexture &texture = canvas.Texture();
     sf::Vector2u size = texture.getSize();
-    if (size.x == 0)
-        return;
 
-    position.x *= size.x;
-    position.y *= size.y;
+    position.x = (int)(position.x * size.x);
+    position.y = (int)(position.y * size.y);
 
-    sf::Vector2f   factor = sf::Vector2f(1, (float)size.y/size.x);
-    sf::RectangleShape pen = sf::RectangleShape(sf::Vector2f(thickness_, thickness_));
-    pen.setOrigin(sf::Vector2f(thickness_ / 2, thickness_ / 2));
-    pen.scale(factor);
-    pen.setPosition(position);
-    pen.setFillColor(color_);
+    stencil_.setPosition(position);
+    texture.draw(stencil_);
 
-    texture.draw(pen);
+    if (isBrushDown_) 
+        ConnectTwoPoints(texture, prevPoint_, position, settings_.thickness_, settings_.color_);        
 
-    if (needConnect_)
-        ConnectTwoPoints(texture, mousePos_, position, thickness_, color_);        
+    prevPoint_ = position;
 
-    mousePos_ = position;
+    isBrushDown_ = true;
 }
 
 void ToolPen::onMove(sf::Vector2f position, Canvas &canvas) 
 {
-    needConnect_ = true;
-    onMainButton(ButtonState::Pressed, position, canvas);
-    needConnect_ = false;
+    if (isBrushDown_)
+        onMainButton(ControlState{.state = ControlState::ButtonState::Pressed}, position, canvas);
 }
 
-void ToolPen::preview(sf::RenderTarget &window, sf::Vector2f position)
+void ToolPen::onCancel() { isBrushDown_ = false; }
+
+void ToolPen::setColor(sf::Color color)   
+{ 
+    settings_.color_ = color; 
+    stencil_.setFillColor(color);
+}
+
+void ToolPen::setThickness(int thickness) 
+{ 
+    settings_.thickness_ = thickness; 
+    stencil_.setSize(sf::Vector2f(thickness, thickness));
+}
+
+void ToolPen::updateStencil()
 {
-    const float outlineThickness = 1.0f;
-
-    sf::RectangleShape pen(sf::Vector2f(thickness_ / 2, thickness_ / 2));
-    pen.setOrigin(thickness_ / 4, thickness_ / 4);
-    pen.setPosition(position);
-    pen.setOutlineThickness(outlineThickness);
-    pen.setOutlineColor(color_);
-    pen.setFillColor(sf::Color::Transparent);
-
-    window.draw(pen);
+    stencil_.setSize     (sf::Vector2f(settings_.thickness_, settings_.thickness_));
+    stencil_.setFillColor(settings_.color_);
+    stencil_.setOrigin(sf::Vector2f(0, settings_.thickness_ / 2));
 }
-
-void ToolPen::setColor(sf::Color color) { color_ = color; }
 
 //---------------------------------------------------------------------
 
-void ToolRect::onMainButton(ButtonState state, sf::Vector2f position, Canvas &canvas)
+ToolRect::ToolRect():
+    settings_(ToolSettings{.color_ = sf::Color::Black, 
+                           .isSquare_ = false, 
+                           .needFill_ = false, 
+                           .outlineColor_ = sf::Color::Black,
+                           .outlineThickness_ = 1}),
+    mousePressed_(false),
+    firstPoint_  (),
+    preview_     (),
+    stencil_     ()
+    {}
+
+void ToolRect::onMainButton(ControlState state, sf::Vector2f position, Canvas &canvas)
 {
-    position.x *= canvas.Texture().getSize().x;
-    position.y *= canvas.Texture().getSize().y;
+    sf::RenderTexture &texture = canvas.Texture();
+    sf::Vector2u size = texture.getSize();
+
+    position.x = (int)(position.x * size.x);
+    position.y = (int)(position.y * size.y);
     
-    if (state == ButtonState::Pressed)
+    if (state.state == ControlState::ButtonState::Pressed)
     {
         if (!mousePressed_)
+        {
             firstPoint_   = position;   
-
+            stencil_.setPosition(firstPoint_);
+            preview_.previewRect.setPosition(position);
+        }
         mousePressed_ = true;
         return;
     }
 
+    //if released
     if (mousePressed_)
     {
-        drawRect(canvas.Texture(), position, false);
+        updateStencil(position);
+        onConfirm(canvas);
         mousePressed_ = false;
+        preview_.needPreview = false;
     }
 }
 
-void ToolRect::onModifier1(ButtonState state, sf::Vector2f position, Canvas &canvas)
+void ToolRect::onMove(sf::Vector2f position, Canvas &canvas)
 {
-    switch (state)
+    if (!mousePressed_)
+        return;
+    
+    preview_.needPreview = true;
+
+    sf::RenderTexture &texture = canvas.Texture();
+    sf::Vector2u size = texture.getSize();
+
+    position.x = (int)(position.x * size.x);
+    position.y = (int)(position.y * size.y);
+
+    updatePreview(position);
+}
+
+void ToolRect::onModifier1(ControlState state, Canvas &canvas)
+{
+    switch (state.state)
     {
-        case ButtonState::Pressed:
-            isSquare_ = true;
+        case ControlState::ButtonState::Pressed:
+            setSquaring(true);
             break;
-        case ButtonState::Released:
-            isSquare_ = false;
+        case ControlState::ButtonState::Released:
+            setSquaring(false);
             break;
     }
 }
 
-void ToolRect::onModifier2(ButtonState state, sf::Vector2f position, Canvas &canvas)
+void ToolRect::onModifier2(ControlState state, Canvas &canvas)
 {
-    if (state == ButtonState::Released)
+    if (state.state == ControlState::ButtonState::Released)
         return;
 
-    needFill_ = !needFill_;
+    setFilling(!settings_.needFill_);
 }
 
-void ToolRect::onCancel(sf::Vector2f position, Canvas &canvas)
+void ToolRect::onConfirm(Canvas &canvas)
+{
+    canvas.Texture().draw(stencil_);
+}
+
+void ToolRect::onCancel()
 {
     mousePressed_ = false;
 }
 
-void ToolRect::preview(sf::RenderTarget &window, sf::Vector2f position)
-{
-    if (mousePressed_)
-    {
-        drawRect(window, position, true);
-        return;
-    }
-    previewFirstPoint_ = position;
+void ToolRect::setColor(sf::Color color)  
+{ 
+    settings_.color_ = color;
+    preview_.previewRect.setFillColor(color); 
 }
 
-void ToolRect::setColor(sf::Color color) { color_ = color; }
+void ToolRect::setFilling(bool needFill)  
+{ 
+    settings_.needFill_ = needFill;
+    preview_.previewRect.setFillColor( needFill ? settings_.color_ : sf::Color::Transparent );
+}
 
-void ToolRect::drawRect(sf::RenderTarget &target, sf::Vector2f position, bool preview)
+void ToolRect::setSquaring(bool isSquare) 
+{ 
+    settings_.isSquare_ = isSquare; 
+}
+
+void ToolRect::setOutlineThickness(int thickness)
+{   
+    settings_.outlineThickness_ = thickness;
+    preview_.previewRect.setOutlineThickness(thickness);
+}
+
+void ToolRect::setOutlineColor(sf::Color color)
+
 {
-    sf::Vector2f tempFirstPoint = preview ? previewFirstPoint_ : firstPoint_;
+    settings_.outlineColor_ = color;
+    preview_.previewRect.setOutlineColor(color);
+}
 
-    sf::Vector2f secondPoint = isSquare_ 
-                    ? (sf::Vector2f(position.x, tempFirstPoint.y + (position.x - tempFirstPoint.x)))
-                    : position;
+Widget *ToolRect::getWidget() { return &preview_; }
 
-    sf::RectangleShape rect(secondPoint - tempFirstPoint);
-    rect.setPosition(tempFirstPoint);
-    rect.setOutlineThickness(outlineThickness_);
-    rect.setOutlineColor(color_);
-    rect.setFillColor(needFill_ ? color_ : sf::Color::Transparent);
+void ToolRect::ToolRectPreview::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform)
+{
+    if (needPreview)
+        canvas.draw(previewRect, parentTransform);
+}
 
-    target.draw(rect);
+void ToolRect::updateStencil(sf::Vector2f rightDown)
+{
+    stencil_.setFillColor( (settings_.needFill_) ? settings_.color_ : sf::Color::Transparent );
+    stencil_.setOutlineColor(settings_.outlineColor_);
+    stencil_.setOutlineThickness(settings_.outlineThickness_);
+    
+    float sizeX = rightDown.x - firstPoint_.x;
+    int sizeYSign = (rightDown.y > firstPoint_.y) ? 1 : -1;
+    float sizeY = (settings_.isSquare_) ? (sizeX * sizeYSign) : (rightDown.y - firstPoint_.y);
+
+    stencil_.setSize(sf::Vector2f(sizeX, sizeY));
+}
+
+void ToolRect::updatePreview(sf::Vector2f rightDown)
+{
+    preview_.previewRect.setFillColor( (settings_.needFill_) ? settings_.color_ : sf::Color::Transparent );
+    preview_.previewRect.setOutlineColor(settings_.outlineColor_);
+    preview_.previewRect.setOutlineThickness(settings_.outlineThickness_);
+
+    float sizeX = rightDown.x - firstPoint_.x;
+    int sizeYSign = (rightDown.y > firstPoint_.y) ? 1 : -1;
+    float sizeY = (settings_.isSquare_) ? (sizeX * sizeYSign) : (rightDown.y - firstPoint_.y);
+
+    preview_.previewRect.setSize(sf::Vector2f(sizeX, sizeY));
 }
 
 //---------------------------------------------------------------------
 
-void ToolPolyline::onMainButton(ButtonState state, sf::Vector2f position, Canvas &canvas)
+ToolPolyline::ToolPolyline():
+    settings_(ToolSettings{.color_ = sf::Color::Black, 
+                           .simpleLine_ = false, 
+                           .thickness_ = 1}),
+    stencil_   (),
+    firstPoint_(),
+    lastPoint_ (),
+    pointsCount(0),
+    preview_()
 {
-    if (state == ButtonState::Pressed)
-    {
-        isNewPoint_ = true;
-
-        sf::RenderTexture &texture = canvas.Texture();
-        sf::Vector2u size = texture.getSize();
-        position.x *= size.x;
-        position.y *= size.y;
-        
-        if (pointsCount == 0)
-        {
-            firstPoint_ = position;
-            lastPoint_ = position;
-
-            sf::RectangleShape pixel(sf::Vector2f(thickness_, thickness_));
-            pixel.setFillColor(color_);
-            pixel.setPosition(position);
-            texture.draw(pixel);
-
-            pointsCount = 1;
-
-            return;
-        }
-
-        if (simpleLine_ && pointsCount == 1)
-        {
-            ConnectTwoPoints(texture, lastPoint_, position, thickness_, color_);
-            onCancel(position, canvas);
-            return;
-        }
-
-        ConnectTwoPoints(texture, lastPoint_, position, thickness_, color_);
-        lastPoint_ = position;
-        ++pointsCount;
-    }
+    preview_.needDrawing = false;
 }
 
-void ToolPolyline::onCancel(sf::Vector2f position, Canvas &canvas)
+void ToolPolyline::onMainButton(ControlState state, sf::Vector2f position, Canvas &canvas)
 {
-    pointsCount = 0;
-}
-
-void ToolPolyline::onConfirm(sf::Vector2f position, Canvas &canvas)
-{
-    if (pointsCount > 2)
-        ConnectTwoPoints(canvas.Texture(), lastPoint_, firstPoint_, thickness_, color_);
+    if (state.state != ControlState::ButtonState::Pressed)
+        return;
     
-    pointsCount = 0;
-}
-
-void ToolPolyline::preview(sf::RenderTarget &window, sf::Vector2f position)
-{
+    sf::RenderTexture &texture = canvas.Texture();
+    sf::Vector2u size = texture.getSize();
+    
+    position.x = (int)(position.x * size.x);
+    position.y = (int)(position.y * size.y);
+    
     if (pointsCount == 0)
     {
-        const float outlineThickness = 1.0f;
-
-        sf::RectangleShape pixel(sf::Vector2f(thickness_ / 2, thickness_ / 2));
-        pixel.setOrigin(thickness_ / 4, thickness_ / 4);
-        pixel.setPosition(position);
-        pixel.setOutlineThickness(outlineThickness);
-        pixel.setOutlineColor(color_);
-        pixel.setFillColor(sf::Color::Transparent);
-
-        window.draw(pixel);
+        firstPoint_ = position;
+        lastPoint_ = position;
+        pointsCount = 1;
+        return;
     }
-    else
+
+    updateStencil(position);
+    texture.draw(stencil_);
+    preview_.needDrawing = false;
+
+    if (settings_.simpleLine_ && pointsCount == 1)
     {
-        if (isNewPoint_)
-        {
-            previewLastPoint_ = position;
-            isNewPoint_ = false; 
-        }
-
-        ConnectTwoPoints(window, previewLastPoint_, position, thickness_, color_);
+        onCancel();
+        return;
     }
+
+    lastPoint_ = position;
+    ++pointsCount;
 }
 
-void ToolPolyline::setColor(sf::Color color) { color_ = color; }
+void ToolPolyline::onMove(sf::Vector2f position, Canvas &canvas)
+{ 
+    if (pointsCount <= 0)
+        return;
 
-void ToolPolyline::setSimpleLine(bool simpleLine) { simpleLine_ = simpleLine; }
+    preview_.needDrawing = true;
+    sf::Vector2u size = canvas.Texture().getSize();
+
+    position.x = (int)(position.x * size.x);
+    position.y = (int)(position.y * size.y);
+    updatePreview(position);
+}
+
+void ToolPolyline::onCancel()
+{
+    pointsCount = 0;
+    preview_.needDrawing = false;
+}
+
+void ToolPolyline::onConfirm(Canvas &canvas)
+{
+    if (pointsCount > 2)
+        ConnectTwoPoints(canvas.Texture(), lastPoint_, firstPoint_, settings_.thickness_, settings_.color_);
+    
+    pointsCount = 0;
+    preview_.needDrawing = false;
+}
+
+Widget *ToolPolyline::getWidget() { return &preview_; }
+
+void ToolPolyline::setColor(sf::Color color) { settings_.color_ = color; }
+
+void ToolPolyline::setThickness(int thickness) { settings_.thickness_ = thickness; }
+
+void ToolPolyline::setSimpleLine(bool simpleLine) { settings_.simpleLine_ = simpleLine; }
+
+void ToolPolyline::ToolLinePreview::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform)
+{
+    if (needDrawing)
+        canvas.draw(line, parentTransform);
+}
+
+///TODO: delete copy&paste
+void ToolPolyline::updateStencil(sf::Vector2f position)
+{
+    stencil_.setFillColor(settings_.color_);
+    stencil_.setOrigin(sf::Vector2f(0, settings_.thickness_ / 2));
+
+    sf::Vector2f size = stencil_.getSize();
+    stencil_.setSize(sf::Vector2f(size.x, settings_.thickness_));
+
+    getLineBetweenTwoPoints(lastPoint_, position, stencil_);
+}
+
+void ToolPolyline::updatePreview(sf::Vector2f position)
+{
+    preview_.line.setFillColor(settings_.color_);
+    preview_.line.setOrigin(sf::Vector2f(0, settings_.thickness_ / 2));
+    
+    sf::Vector2f size = preview_.line.getSize();
+    preview_.line.setSize(sf::Vector2f(size.x, settings_.thickness_));
+
+    getLineBetweenTwoPoints(lastPoint_, position, preview_.line);
+}
 
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------

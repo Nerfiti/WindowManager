@@ -47,8 +47,7 @@ FrameWindow::FrameWindow(sf::Vector2f pos, sf::Vector2f size, float frameHeight,
         float offset = frameHeight / 2 / size.y;
         closeButton_.setPosition(sf::Vector2f(1 - offset, offset));
 
-        //closeButton_.setFillColor(sf::Color::Cyan);
-        frame_.setFillColor(sf::Color::Magenta);
+        frame_.setFillColor(sf::Color(64, 64, 64));
         windowRect_.setFillColor(color_);
 
         setCloseButtonTexture("./Resources/CloseButton.png");
@@ -76,7 +75,7 @@ bool FrameWindow::onMousePressed(sf::Mouse::Button key)
     if (mouseInWindow_ && key == sf::Mouse::Button::Left)
     {
         mousePressed_ = true;
-        sf::Vector2f localMousePos = transform_.getInverse().transformPoint(mousePos_);
+        sf::Vector2f localMousePos = mousePos_;
 
         float radius = closeButton_.getRadius();
         if (lengthInSquare(closeButton_.getPosition() - localMousePos) < radius * radius)
@@ -97,7 +96,7 @@ bool FrameWindow::onMousePressed(sf::Mouse::Button key)
 
 bool FrameWindow::onMouseMoved(int x, int y, const sf::Transform &parentTransform)
 {
-    sf::Vector2f newMousePos =(parentTransform * transform_).getInverse().transformPoint(sf::Vector2f(x, y));
+    sf::Vector2f newMousePos = (parentTransform * transform_).getInverse().transformPoint(sf::Vector2f(x, y));
 
     sf::Vector2f deltaMouse = newMousePos - mousePos_;
 
@@ -136,7 +135,7 @@ bool FrameWindow::onMouseReleased(sf::Mouse::Button key)
     if (mouseInWindow_ && key == sf::Mouse::Button::Left)
     {
         mousePressed_ = false;
-        sf::Vector2f localMousePos = transform_.getInverse().transformPoint(mousePos_);
+        sf::Vector2f localMousePos = mousePos_;
 
         if (lengthInSquare(closeButton_.getPosition() - localMousePos) < closeButton_.getRadius() && closeButtonCaptured_)
         {
@@ -178,7 +177,7 @@ void FrameWindow::close()
 
 void FrameWindow::move(sf::Vector2f move)
 {
-    transform_.translate(transform_.getInverse().transformPoint(move));
+    transform_.translate(move);
 }
 
 void FrameWindow::setCloseButtonTexture(const char *filename)

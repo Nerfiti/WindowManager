@@ -2,37 +2,70 @@
 
 //----------------------------------------------------------------------
 
-Canvas::Canvas(sf::Vector2f size, ToolPalette& palette):
-    palette_(palette)
+Canvas::Canvas(sf::Vector2f pos, sf::Vector2f size, ToolPalette& palette, const char *filename):
+    Window(pos, size, *palette.getBackgroundColor()),
+    palette_            (palette),
+    texture_            (),
+    mousePos_           (),
+    isMainButtonPressed_(false),
+    viewSize_           (stdResolutionX, stdResolutionY),
+    offset_             (0, 0)
 {
-    const sf::Vector2u resolution(1920, 1080);
-    texture_.create(resolution.x, resolution.y);
-    sf::RectangleShape background(sf::Vector2f(resolution.x, resolution.y));
-    background.setFillColor(*palette.getBackgroundColor());
+    sf::RectangleShape background(sf::Vector2f(viewSize_.x, viewSize_.y));
 
-    texture_.draw(background);
+    if (filename)
+    {
+        sf::Texture tmpTexture;
+        tmpTexture.loadFromFile(filename);
+        viewSize_ = sf::Vector2i(tmpTexture.getSize());
+
+        texture_.create(viewSize_.x, viewSize_.y);
+        background.setSize(sf::Vector2f(viewSize_.x, viewSize_.y));
+
+        background.setTexture(&tmpTexture);
+        texture_.draw(background);
+    }   
+    else
+    {
+        texture_.create(viewSize_.x, viewSize_.y);
+
+        background.setFillColor(*palette.getBackgroundColor());        
+        texture_.draw(background);
+    }
+
     texture_.display();
 
-    rect_.setTexture(&texture_.getTexture());
-    rect_.setSize(size);
+    windowRect_.setTexture(&texture_.getTexture());
 }
 
 void Canvas::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform)
 {
-    canvas.draw(rect_, parentTransform);
-    palette_.getActiveTool()->preview(canvas, parentTransform.transformPoint(mousePos_));
+    sf::Transform finalTransform = parentTransform * transform_;
+    canvas.draw(windowRect_, finalTransform);
+
+    ///TODO: Support scrollbar
+    if (Widget *widget = palette_.getActiveTool()->getWidget())
+    {
+        sf::Vector2u size = texture_.getSize();
+        finalTransform.scale(sf::Vector2f((float)1/size.x, (float)1/size.y));
+        widget->draw(canvas, finalTransform);
+    }
 }
 
 bool Canvas::onMousePressed(sf::Mouse::Button key)
 {
+    ControlState state {
+        .state = ControlState::Pressed
+    };
+
     switch (key)
     {
         case MainButton:
             isMainButtonPressed_ = true;
-            palette_.getActiveTool()->onMainButton(ButtonState::Pressed, mousePos_, *this);
+            palette_.getActiveTool()->onMainButton(state, mousePos_, *this);
             break;
         case SecondaryButton:
-            palette_.getActiveTool()->onSecondaryButton(ButtonState::Pressed, mousePos_, *this);
+            palette_.getActiveTool()->onSecondaryButton(state, mousePos_, *this);
             break;
     }
 
@@ -41,23 +74,25 @@ bool Canvas::onMousePressed(sf::Mouse::Button key)
 
 bool Canvas::onMouseMoved(int x, int y, const sf::Transform &parentTransform)     
 {
-    mousePos_ = parentTransform.getInverse().transformPoint(sf::Vector2f(x, y));
-    if (isMainButtonPressed_)
-        palette_.getActiveTool()->onMove(mousePos_, *this);
-
+    mousePos_ = (parentTransform * transform_).getInverse().transformPoint(sf::Vector2f(x, y));
+    palette_.getActiveTool()->onMove(mousePos_, *this);
     return true;
 }
 
 bool Canvas::onMouseReleased(sf::Mouse::Button key)
 {
+    ControlState state {
+        .state = ControlState::Released
+    };
+
     switch (key)
     {
         case MainButton:
             isMainButtonPressed_ = false;
-            palette_.getActiveTool()->onMainButton(ButtonState::Released, mousePos_, *this);
+            palette_.getActiveTool()->onMainButton(state, mousePos_, *this);
             break;
         case SecondaryButton:
-            palette_.getActiveTool()->onSecondaryButton(ButtonState::Released, mousePos_, *this);
+            palette_.getActiveTool()->onSecondaryButton(state, mousePos_, *this);
             break;
     }
 
@@ -66,26 +101,30 @@ bool Canvas::onMouseReleased(sf::Mouse::Button key)
 
 bool Canvas::onKeyboardPressed(sf::Keyboard::Key key)
 {
+    ControlState state {
+        .state = ControlState::Pressed
+    };
+
     switch (key)
     {
         case Modifier1Button:
-            palette_.getActiveTool()->onModifier1(ButtonState::Pressed, mousePos_, *this);
+            palette_.getActiveTool()->onModifier1(state, *this);
             return true;
         
         case Modifier2Button:
-            palette_.getActiveTool()->onModifier2(ButtonState::Pressed, mousePos_, *this);
+            palette_.getActiveTool()->onModifier2(state, *this);
             return true;
         
         case Modifier3Button:
-            palette_.getActiveTool()->onModifier3(ButtonState::Pressed, mousePos_, *this);
+            palette_.getActiveTool()->onModifier3(state, *this);
             return true;
 
         case ConfirmButton:
-            palette_.getActiveTool()->onConfirm(mousePos_, *this);
+            palette_.getActiveTool()->onConfirm(*this);
             return true;
 
         case CancelButton:
-            palette_.getActiveTool()->onCancel(mousePos_, *this);
+            palette_.getActiveTool()->onCancel();
             return true;
 
         default:
@@ -95,18 +134,22 @@ bool Canvas::onKeyboardPressed(sf::Keyboard::Key key)
 
 bool Canvas::onKeyboardReleased(sf::Keyboard::Key key)
 {
+    ControlState state {
+        .state = ControlState::Released
+    };
+
     switch (key)
     {
         case Modifier1Button:
-            palette_.getActiveTool()->onModifier1(ButtonState::Released, mousePos_, *this);
+            palette_.getActiveTool()->onModifier1(state, *this);
             return true;
         
         case Modifier2Button:
-            palette_.getActiveTool()->onModifier2(ButtonState::Released, mousePos_, *this);
+            palette_.getActiveTool()->onModifier2(state, *this);
             return true;
         
         case Modifier3Button:
-            palette_.getActiveTool()->onModifier3(ButtonState::Released, mousePos_, *this);
+            palette_.getActiveTool()->onModifier3(state, *this);
             return true;
 
         default:
@@ -114,12 +157,33 @@ bool Canvas::onKeyboardReleased(sf::Keyboard::Key key)
     }
 }
 
-bool Canvas::onTime(float deltaSeconds)   
-{
-    return false;
-}
+bool Canvas::onTime(float deltaSeconds) { return false; }
 
 sf::RenderTexture  &Canvas::Texture() { return texture_; }
-sf::RectangleShape &Canvas::Rect()    { return rect_;    }
+sf::RectangleShape &Canvas::Rect()    { return windowRect_; }
+
+void Canvas::horizontalScroll(int offset)
+{
+    offset_.x += offset;
+    windowRect_.setTextureRect(sf::IntRect(offset_, viewSize_));
+}
+
+void Canvas::verticalScroll(int offset)
+{
+    offset_.y += offset;
+    windowRect_.setTextureRect(sf::IntRect(offset_, viewSize_));
+}
+
+void Canvas::zoom(sf::Vector2f factor)
+{
+    viewSize_.x *= factor.x;
+    viewSize_.y *= factor.y;
+    windowRect_.setTextureRect(sf::IntRect(offset_, viewSize_));
+}
+
+void Canvas::zoom(float factor)
+{
+    zoom(sf::Vector2f(factor, factor));
+}
 
 //----------------------------------------------------------------------

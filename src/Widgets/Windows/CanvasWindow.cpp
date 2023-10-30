@@ -2,7 +2,7 @@
 
 CanvasWindow::CanvasWindow(sf::Vector2f pos, sf::Vector2f size, float frameHeight, ToolPalette &palette, sf::Color color):
     FrameWindow(pos, size, frameHeight, color),
-    canvas_(sf::Vector2f(1, 1), palette),
+    canvas_(sf::Vector2f(0, frameHeight / size.y), sf::Vector2f(1, 1 - frameHeight / size.y), palette),
     toolWidget_(palette)
     {}
 
@@ -20,7 +20,7 @@ void CanvasWindow::draw(sf::RenderTarget& canvas, const sf::Transform& parentTra
 
 bool CanvasWindow::onMousePressed(sf::Mouse::Button key)
 {
-    if (FrameWindow::onMousePressed(key))
+    if (FrameWindow::onMousePressed(key) && !frameCaptured_)
     {
         canvas_.onMousePressed(key);
         return true;

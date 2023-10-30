@@ -23,11 +23,22 @@ int main()
     defaultTransform.scale((sf::Vector2f)LinuxWindow.getSize());
 
     //Main window
-    MainWindow mainWindow(LinuxWindow, 0, 0, 1, 1, 0.05, sf::Color::Green);
+    MainWindow mainWindow(LinuxWindow, 0, 0, 1, 1, 0.05f, sf::Color(128, 128, 128));
     
     //Adding windows
-    ToolPalette palette(sf::Color::Black, sf::Color::White);
-    CanvasWindow canvas(sf::Vector2f(0.1, 0.05), sf::Vector2f(0.9, 0.95), 0, palette);
+    ContainerWindow a(0.3f, 0.3f, 0.5f, 0.5f, 0.05f, sf::Color::Green);
+    FrameWindow b(0.3f, 0.3f, 0.5f, 0.5f, 0.1f, sf::Color::Yellow);
+    a.addWindow(&b);
+    mainWindow.addWindow(&a);
+
+    FrameWindow tempWindowMenu(0, 0.05f, 1, 0.02f, 0, sf::Color(32, 32, 32));
+    mainWindow.addWindow(&tempWindowMenu);
+
+    FrameWindow tempWindowPalette(0, 0.07f, 0.1f, 1, 0, sf::Color(64, 64, 64));
+    mainWindow.addWindow(&tempWindowPalette);
+
+    ToolPalette palette(sf::Color::White, sf::Color::Black);
+    CanvasWindow canvas(0.1f, 0.07f, 0.9f, 0.93f, 0.0f, palette);
     mainWindow.addWindow(&canvas);
 
     //Main loop
@@ -72,8 +83,9 @@ void pollEvents(sf::RenderWindow& LinuxWindow, ContainerWindow& mainWindow, sf::
             }
             case sf::Event::MouseMoved:
             {
-                sf::Vector2f mousePos = sf::Transform::Identity.getInverse().transformPoint(event.mouseMove.x, event.mouseMove.y);
-                mainWindow.onMouseMoved(mousePos.x, mousePos.y, defaultTransform);
+                sf::Vector2f mousePos = sf::Transform::Identity.getInverse().transformPoint(
+                                                (float)event.mouseMove.x, (float)event.mouseMove.y);
+                mainWindow.onMouseMoved((int)mousePos.x, (int)mousePos.y, defaultTransform);
                 break;
             }
             case sf::Event::KeyPressed:
@@ -86,6 +98,8 @@ void pollEvents(sf::RenderWindow& LinuxWindow, ContainerWindow& mainWindow, sf::
                 mainWindow.onKeyboardReleased(event.key.code);
                 break;
             }
+            default:
+                break;
         }
     }
 }

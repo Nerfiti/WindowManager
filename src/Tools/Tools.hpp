@@ -7,11 +7,14 @@ class Canvas;
 
 //--------------------------------------------------------------
 
-enum class ButtonState
+struct ControlState
 {
-    Pressed,
-    Released
+    enum ButtonState
+    {
+        Pressed, Released
+    } state;
 };
+
 
 //--------------------------------------------------------------
 //--------------------------------------------------------------
@@ -19,19 +22,17 @@ enum class ButtonState
 class Tool
 {
     public:
-        virtual void onMainButton       (ButtonState state, sf::Vector2f position, Canvas &canvas) = 0;
-        virtual void onSecondaryButton  (ButtonState state, sf::Vector2f position, Canvas &canvas);
-        virtual void onModifier1        (ButtonState state, sf::Vector2f position, Canvas &canvas);
-        virtual void onModifier2        (ButtonState state, sf::Vector2f position, Canvas &canvas);
-        virtual void onModifier3        (ButtonState state, sf::Vector2f position, Canvas &canvas);
+        virtual void onMainButton       (ControlState state, sf::Vector2f position, Canvas &canvas) = 0;
+        virtual void onSecondaryButton  (ControlState state, sf::Vector2f position, Canvas &canvas);
+        virtual void onModifier1        (ControlState state, Canvas &canvas);
+        virtual void onModifier2        (ControlState state, Canvas &canvas);
+        virtual void onModifier3        (ControlState state, Canvas &canvas);
 
         virtual void onMove             (sf::Vector2f position, Canvas &canvas);
-        virtual void onConfirm          (sf::Vector2f position, Canvas &canvas);
-        virtual void onCancel           (sf::Vector2f position, Canvas &canvas);
+        virtual void onConfirm          (Canvas &canvas);
+        virtual void onCancel           ();
 
         virtual Widget *getWidget();
-
-        virtual void preview(sf::RenderTarget &window, sf::Vector2f position);
 };
 
 //--------------------------------------------------------------
@@ -39,19 +40,28 @@ class Tool
 class ToolPen : public Tool
 {
     public:
-        void onMainButton (ButtonState state, sf::Vector2f position, Canvas &canvas) override;
-        void onMove (sf::Vector2f position, Canvas &canvas) override;
+        ToolPen();
 
-        void preview(sf::RenderTarget &window, sf::Vector2f position) override;
+        void onMainButton (ControlState state, sf::Vector2f position, Canvas &canvas) override;
+        void onMove (sf::Vector2f position, Canvas &canvas)                           override;
+        void onCancel()                                                               override;
 
         void setColor(sf::Color);
+        void setThickness(int thickness);
     
     private:
-        int   thickness_ = 6;
-        sf::Color color_ = sf::Color::Black;
+        struct ToolSettings
+        {
+            sf::Color color_;
+            int thickness_;
+        } settings_;
 
-        sf::Vector2f mousePos_;
-        bool      needConnect_ = false;
+        sf::RectangleShape stencil_;
+
+        sf::Vector2f prevPoint_;
+        bool       isBrushDown_ = false;
+
+        void updateStencil(); //Uptade rectangleShape according to settings_
 };
 
 //--------------------------------------------------------------
@@ -59,27 +69,53 @@ class ToolPen : public Tool
 class ToolRect : public Tool
 {
     public:
-        void onMainButton (ButtonState state, sf::Vector2f position, Canvas &canvas) override;
-        void onModifier1  (ButtonState state, sf::Vector2f position, Canvas &canvas) override;
-        void onModifier2  (ButtonState state, sf::Vector2f position, Canvas &canvas) override;
-        void onCancel     (sf::Vector2f position, Canvas &canvas) override;
-        
-        void preview(sf::RenderTarget &window, sf::Vector2f position) override;
-    
-        void setColor(sf::Color color);
+        ToolRect();
+
+        void onMainButton (ControlState state, sf::Vector2f position, Canvas &canvas) override;
+
+        void onMove       (sf::Vector2f position, Canvas &canvas) override;
+        void onModifier1  (ControlState state,    Canvas &canvas) override;
+        void onModifier2  (ControlState state,    Canvas &canvas) override;
+        void onConfirm    (Canvas &canvas)                        override;
+        void onCancel     ()                                      override;
+
+        Widget *getWidget() override;
+
+        void setColor           (sf::Color color);
+        void setFilling         (bool needFill  );
+        void setSquaring        (bool isSquare  );
+        void setOutlineThickness(int thickness  );
+        void setOutlineColor    (sf::Color color);
 
     private:
-        float outlineThickness_  = 3;
-        sf::Color color_         = sf::Color::Black;
+        struct ToolSettings
+        {
+            sf::Color color_ = sf::Color::Black;
+            bool isSquare_   = false;
+            
+            bool needFill_   = false;
 
-        sf::Vector2f firstPoint_;
-        sf::Vector2f previewFirstPoint_;
+            sf::Color outlineColor_  = sf::Color::Black;
+            float outlineThickness_  = 1;
+        } settings_;
 
-        bool mousePressed_ = false;
-        bool isSquare_     = false;
-        bool needFill_     = false;
+        bool               mousePressed_;
+        sf::Vector2f       firstPoint_;
+        sf::RectangleShape stencil_;
 
-        void drawRect(sf::RenderTarget &target, sf::Vector2f position, bool preview);
+        ///TODO: private
+        class ToolRectPreview : public Widget
+        {
+            public:
+                sf::RectangleShape previewRect;
+                bool needPreview = false;
+
+                virtual void draw(sf::RenderTarget& canvas, 
+                                  const sf::Transform& parentTransform = sf::Transform::Identity) override;
+        } preview_;
+
+        void updateStencil(sf::Vector2f rightDown); //Uptade rectangleShape according to settings_
+        void updatePreview(sf::Vector2f rightDown);
 };
 
 //--------------------------------------------------------------
@@ -87,28 +123,47 @@ class ToolRect : public Tool
 class ToolPolyline : public Tool
 {
     public:
-        void onMainButton (ButtonState state, sf::Vector2f position, Canvas &canvas) override;
-        void onCancel     (sf::Vector2f position, Canvas &canvas) override;
-        void onConfirm    (sf::Vector2f position, Canvas &canvas) override;
-    
-        void preview(sf::RenderTarget &window, sf::Vector2f position) override;
+        ToolPolyline();
+
+        void onMainButton (ControlState state, sf::Vector2f position, Canvas &canvas) override;
+        void onMove       (sf::Vector2f position, Canvas &canvas)                     override;
+        void onConfirm    (Canvas &canvas)                                            override;
+        void onCancel     ()                                                          override;
+
+        Widget *getWidget() override;
 
         void setColor(sf::Color color);
+        void setThickness(int thickness);
         void setSimpleLine(bool simpleLine);
 
     private:
+        struct ToolSettings
+        {
+            sf::Color color_;
+            bool simpleLine_;
+            float thickness_;
+        } settings_;
+
+        sf::RectangleShape stencil_;
+
         sf::Vector2f firstPoint_;
         sf::Vector2f lastPoint_;
 
-        sf::Vector2f previewLastPoint_;
+        size_t pointsCount;
+        
+        ///TODO: private
+        class ToolLinePreview : public Widget
+        {
+            public:
+                sf::RectangleShape line;
+                bool needDrawing;
 
-        float thickness_ = 6;
-        sf::Color color_;
+                virtual void draw(sf::RenderTarget& canvas, 
+                                  const sf::Transform& parentTransform = sf::Transform::Identity) override;             
+        } preview_;
 
-        bool simpleLine_   = false;
-        size_t pointsCount = 0;
-
-        bool isNewPoint_ = false;
+        void updateStencil(sf::Vector2f position);
+        void updatePreview(sf::Vector2f position);
 };
 
 //--------------------------------------------------------------

@@ -1,17 +1,17 @@
 #ifndef CANVAS_HPP
 #define CANVAS_HPP
 
-#include "../Widget.hpp"
+#include "../Windows/Windows.hpp"
 #include "../../Tools/Tools.hpp"
 
 class ToolPalette;
 
 //----------------------------------------------------------------------
 
-class Canvas : public Widget
+class Canvas : public Window
 {
     public:
-        Canvas(sf::Vector2f size, ToolPalette& palette);
+        Canvas(sf::Vector2f pos, sf::Vector2f size, ToolPalette& palette, const char *filename = nullptr);
 
         virtual void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
 
@@ -25,14 +25,22 @@ class Canvas : public Widget
         sf::RenderTexture  &Texture();
         sf::RectangleShape &Rect();
 
-    private:
-        sf::RenderTexture  texture_;
-        sf::RectangleShape rect_;
+        void horizontalScroll(int offset);
+        void verticalScroll  (int offset);
+        
+        void zoom(sf::Vector2f factor);
+        void zoom(float factor);
 
+    private:
         ToolPalette& palette_;
+
+        sf::RenderTexture  texture_;
 
         sf::Vector2f    mousePos_;
         bool isMainButtonPressed_;
+
+        sf::Vector2i viewSize_;
+        sf::Vector2i offset_;
 
         static const sf::Mouse::Button MainButton      = sf::Mouse::Left;
         static const sf::Mouse::Button SecondaryButton = sf::Mouse::Right;
@@ -41,6 +49,9 @@ class Canvas : public Widget
         static const sf::Keyboard::Key Modifier3Button = sf::Keyboard::Key::LControl;
         static const sf::Keyboard::Key ConfirmButton   = sf::Keyboard::Key::Enter;
         static const sf::Keyboard::Key CancelButton    = sf::Keyboard::Key::Escape;
+
+        static const int stdResolutionX = 100;
+        static const int stdResolutionY = 100;
 };
 
 //----------------------------------------------------------------------
