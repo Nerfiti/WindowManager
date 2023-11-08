@@ -70,7 +70,7 @@ class ContainerWindow : public FrameWindow
         ContainerWindow(sf::Vector2f pos, sf::Vector2f size, float frameHeight, sf::Color color = sf::Color::Black);
         ContainerWindow(float posX, float posY, float width, float height, float frameHeight, sf::Color color = sf::Color::Black);
         
-        virtual ~ContainerWindow() = default;
+        virtual ~ContainerWindow();
 
         void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
 
@@ -87,26 +87,6 @@ class ContainerWindow : public FrameWindow
     
     protected:
         std::list<FrameWindow *>windows_;
-};
-
-//---------------------------------------------------------------------------
-
-class MainWindow : public ContainerWindow
-{
-    public:
-        MainWindow(sf::RenderWindow &LinuxWinow, sf::Vector2f pos, sf::Vector2f size, float frameHeight, sf::Color color = sf::Color::Black);
-        MainWindow(sf::RenderWindow &LinuxWinow, float posX, float posY, float width, float height, float frameHeight, sf::Color color = sf::Color::Black);
-
-        bool onTime(float deltaSeconds) override;
-
-        void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform) override;
-        
-        void move(sf::Vector2f move) override;
-        void close() override;
-
-    private:
-        sf::RenderWindow &LinuxWindow_;
-        Timer             timer_;
 };
 
 //---------------------------------------------------------------------------

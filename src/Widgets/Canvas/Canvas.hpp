@@ -46,11 +46,14 @@ class Canvas : public Window
 
         sf::Vector2f    mousePos_;
         bool isMainButtonPressed_;
+        bool isLControlPressed_;
 
         sf::Vector2i viewSize_;
         sf::Vector2i offset_;
 
         ScrollBar *scrollbar_;        
+
+        void saveImage();
 
         static const sf::Mouse::Button MainButton      = sf::Mouse::Left;
         static const sf::Mouse::Button SecondaryButton = sf::Mouse::Right;

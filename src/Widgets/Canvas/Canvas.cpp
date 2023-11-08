@@ -1,3 +1,5 @@
+#include "cstring"
+
 #include "Canvas.hpp"
 
 //----------------------------------------------------------------------
@@ -49,11 +51,12 @@ void Canvas::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform
 {
     sf::Transform finalTransform = parentTransform * transform_;
     canvas.draw(windowRect_, finalTransform);
-    scrollbar_->draw(canvas, finalTransform);
 
     if (!isFocused_)
         return;
 
+    scrollbar_->draw(canvas, finalTransform);
+    
     if (Widget *widget = tools_.getActiveTool()->getWidget())
     {
         sf::Vector2u size = texture_.getSize();
@@ -101,7 +104,6 @@ bool Canvas::onMouseMoved(int x, int y, const sf::Transform &parentTransform)
 
     if (!windowRect_.getLocalBounds().contains(mousePos_))
     {
-        isFocused_ = false;
         tools_.getActiveTool()->onCancel();
         return false;
     }
@@ -124,8 +126,8 @@ bool Canvas::onMouseReleased(sf::Mouse::Button key)
         .state = ControlState::Released
     };
 
-    if (scrollbar_->isFocused() && scrollbar_->onMouseReleased(key))
-        return true;
+    if (scrollbar_->isFocused())
+        scrollbar_->onMouseReleased(key);
 
     switch (key)
     {
@@ -163,6 +165,7 @@ bool Canvas::onKeyboardPressed(sf::Keyboard::Key key)
             return true;
         
         case Modifier3Button:
+            isLControlPressed_ = true;
             tools_.getActiveTool()->onModifier3(state, *this);
             return true;
 
@@ -199,6 +202,13 @@ bool Canvas::onKeyboardPressed(sf::Keyboard::Key key)
             filters_.getLastFilter()->applyFilter(*this, mask);
             return true;
 
+        case sf::Keyboard::Key::S:
+        {
+            saveImage();
+            return true;
+        }        
+
+
         default:
             return false;
     }
@@ -223,6 +233,7 @@ bool Canvas::onKeyboardReleased(sf::Keyboard::Key key)
             return true;
         
         case Modifier3Button:
+            isLControlPressed_ = false;
             tools_.getActiveTool()->onModifier3(state, *this);
             return true;
 
@@ -265,6 +276,30 @@ void Canvas::zoom(float factor)
         offset_.y = size.y - viewSize_.y;
         
     windowRect_.setTextureRect(sf::IntRect(offset_, viewSize_));
+}
+
+void Canvas::saveImage()
+{
+    const size_t MaxPathLen = 100;
+    char *path = new char[MaxPathLen + 1];
+
+    FILE *stream = popen("zenity --file-selection --save", "r");
+    if (!fgets(path, MaxPathLen, stream))
+    {
+        printf("Error opening stream in \"popen()\"\n");
+        delete [] path;
+        return;
+    }
+
+    size_t endId = strcspn(path, "\n\r");
+    if (endId == MaxPathLen)
+    {
+        printf("Filename is too long.\n");
+        return;
+    }
+    path[endId] = '\0';            
+
+    texture_.getTexture().copyToImage().saveToFile(path);
 }
 
 //----------------------------------------------------------------------

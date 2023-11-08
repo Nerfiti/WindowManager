@@ -22,7 +22,7 @@ class Widget
         virtual bool onTime             (float deltaSeconds);
     
         bool isFocused();
-        void setIsFocused(bool isFocused);
+        virtual void setIsFocused(bool isFocused);
 
     protected:
         bool isFocused_ = true;

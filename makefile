@@ -12,6 +12,7 @@ all:
 												\
 		./src/Widgets/Windows/Windows.cpp 		\
 		./src/Widgets/Windows/CanvasWindow.cpp  \
+		./src/Widgets/Windows/MainWindow.cpp	\
 		./src/Widgets/Timer/Timer.cpp  	  		\
 		./src/Widgets/Canvas/Canvas.cpp   		\
 		./src/Widgets/Canvas/ToolWidgets.cpp	\
@@ -34,6 +35,7 @@ debug:
 												\
 		./src/Widgets/Windows/Windows.cpp 		\
 		./src/Widgets/Windows/CanvasWindow.cpp  \
+		./src/Widgets/Windows/MainWindow.cpp	\
 		./src/Widgets/Timer/Timer.cpp  	  		\
 		./src/Widgets/Canvas/Canvas.cpp   		\
 		./src/Widgets/Canvas/ToolWidgets.cpp	\

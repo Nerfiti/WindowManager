@@ -203,6 +203,12 @@ ContainerWindow::ContainerWindow(float posX, float posY, float width, float heig
     ContainerWindow(sf::Vector2f(posX, posY), sf::Vector2f(width, height), frameHeight, color)
     {}
 
+ContainerWindow::~ContainerWindow()
+{
+    for (auto it : windows_)
+        delete it;
+}
+
 void ContainerWindow::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform)
 {
     FrameWindow::draw(canvas, parentTransform);
@@ -323,7 +329,7 @@ bool ContainerWindow::onTime(float deltaSeconds)
 
 void ContainerWindow::addWindow(FrameWindow *window)
 {
-    windows_.push_back(window);
+    windows_.push_front(window);
 }
 
 void ContainerWindow::close()
@@ -331,48 +337,6 @@ void ContainerWindow::close()
     FrameWindow::close();
     for (auto it : windows_)
         it->close();
-}
-
-//---------------------------------------------------------------------------
-
-MainWindow::MainWindow(sf::RenderWindow &LinuxWindow, sf::Vector2f pos, sf::Vector2f size, float frameHeight, sf::Color color):
-    ContainerWindow(pos, size, frameHeight, color),
-    LinuxWindow_(LinuxWindow),
-    timer_(sf::Vector2f(0.05f, 1 - 0.05f), 0.05f)
-    {}
-
-MainWindow::MainWindow(sf::RenderWindow &LinuxWindow, float posX, float posY, float width, float height, float frameHeight, sf::Color color):
-    MainWindow(LinuxWindow, sf::Vector2f(posX, posY), sf::Vector2f(width, height), frameHeight, color)
-    {}
-
-bool MainWindow::onTime(float deltaSeconds)
-{
-    ContainerWindow::onTime(deltaSeconds);
-    timer_.onTime(deltaSeconds);
-
-    return false;
-}
-
-void MainWindow::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform)
-{
-    ContainerWindow::draw(canvas, parentTransform);
- 
-    sf::Transform finalTransform = parentTransform * transform_;
-    timer_.draw(canvas, finalTransform);
-}
-
-void MainWindow::move(sf::Vector2f move)
-{
-    sf::Vector2u winSize = LinuxWindow_.getSize();
-    move.x *= winSize.x;
-    move.y *= winSize.y;
-
-    LinuxWindow_.setPosition(LinuxWindow_.getPosition() + sf::Vector2i(move.x, move.y));
-}
-
-void MainWindow::close()
-{
-    LinuxWindow_.close();
 }
 
 //---------------------------------------------------------------------------
