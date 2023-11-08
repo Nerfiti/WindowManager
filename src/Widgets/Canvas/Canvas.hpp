@@ -3,15 +3,23 @@
 
 #include "../Windows/Windows.hpp"
 #include "../../Tools/Tools.hpp"
+#include "../../Tools/Filters.hpp"
+#include "../Canvas/ScrollBar.hpp"
 
 class ToolPalette;
+class FilterPalette;
+class ScrollBar;
 
 //----------------------------------------------------------------------
 
 class Canvas : public Window
 {
     public:
-        Canvas(sf::Vector2f pos, sf::Vector2f size, ToolPalette& palette, const char *filename = nullptr);
+        Canvas(sf::Vector2f pos, sf::Vector2f size, ToolPalette &tools, FilterPalette &filters, const char *filename = nullptr);
+        Canvas(const Canvas&) = delete;
+        ~Canvas();
+
+        Canvas &operator=(const Canvas&) = delete;
 
         virtual void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
 
@@ -27,12 +35,12 @@ class Canvas : public Window
 
         void horizontalScroll(int offset);
         void verticalScroll  (int offset);
-        
-        void zoom(sf::Vector2f factor);
+    
         void zoom(float factor);
 
     private:
-        ToolPalette& palette_;
+        ToolPalette &tools_;
+        FilterPalette &filters_;
 
         sf::RenderTexture  texture_;
 
@@ -42,6 +50,8 @@ class Canvas : public Window
         sf::Vector2i viewSize_;
         sf::Vector2i offset_;
 
+        ScrollBar *scrollbar_;        
+
         static const sf::Mouse::Button MainButton      = sf::Mouse::Left;
         static const sf::Mouse::Button SecondaryButton = sf::Mouse::Right;
         static const sf::Keyboard::Key Modifier1Button = sf::Keyboard::Key::LShift;
@@ -50,8 +60,15 @@ class Canvas : public Window
         static const sf::Keyboard::Key ConfirmButton   = sf::Keyboard::Key::Enter;
         static const sf::Keyboard::Key CancelButton    = sf::Keyboard::Key::Escape;
 
-        static const int stdResolutionX = 100;
-        static const int stdResolutionY = 100;
+        ///TODO: think about config file
+        static const sf::Keyboard::Key LastFilter       = sf::Keyboard::Key::F;
+        static const sf::Keyboard::Key BrightnessFilter = sf::Keyboard::Key::I;
+        static const sf::Keyboard::Key InverseFilter    = sf::Keyboard::Key::N;
+        static const sf::Keyboard::Key GrayscaleFilter  = sf::Keyboard::Key::G;
+        static const sf::Keyboard::Key BlackWhiteFilter = sf::Keyboard::Key::W; 
+
+        static const int stdResolutionX = 256;
+        static const int stdResolutionY = 256;
 };
 
 //----------------------------------------------------------------------

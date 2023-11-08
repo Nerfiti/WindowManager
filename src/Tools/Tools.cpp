@@ -9,6 +9,7 @@ static void getLineBetweenTwoPoints(sf::Vector2f point1, sf::Vector2f point2, sf
 {
     sf::Vector2f size = outRect.getSize();
     outRect.setSize(sf::Vector2f(length(point2 - point1), size.y));
+    outRect.setOrigin(sf::Vector2f(0, size.y / 2));
     outRect.setPosition(point1);
     
     float tangens = (point2.y - point1.y) / (point2.x - point1.x);
@@ -24,7 +25,6 @@ static void ConnectTwoPoints(sf::RenderTarget &target, sf::Vector2f point1, sf::
 {
     sf::RectangleShape connection(sf::Vector2f(0, thickness));
     connection.setFillColor(color);
-    connection.setOrigin(sf::Vector2f(0, thickness / 2));
 
     getLineBetweenTwoPoints(point1, point2, connection);
 
@@ -48,7 +48,7 @@ Widget *Tool::getWidget()     { return nullptr; }
 //---------------------------------------------------------------------
 
 ToolPen::ToolPen():
-    settings_   (ToolSettings{.color_ = sf::Color::Black, .thickness_ = 1}),
+    settings_   (ToolSettings{.color_ = sf::Color::Black, .thickness_ = 6}),
     stencil_    (),
     prevPoint_  (),
     isBrushDown_(false)
@@ -96,14 +96,15 @@ void ToolPen::setColor(sf::Color color)
 void ToolPen::setThickness(int thickness) 
 { 
     settings_.thickness_ = thickness; 
-    stencil_.setSize(sf::Vector2f(thickness, thickness));
+    stencil_.setRadius((float)thickness / 2);
 }
 
 void ToolPen::updateStencil()
 {
-    stencil_.setSize     (sf::Vector2f(settings_.thickness_, settings_.thickness_));
+    float radius = (float)settings_.thickness_ / 2;
+    stencil_.setRadius    (radius);
     stencil_.setFillColor(settings_.color_);
-    stencil_.setOrigin(sf::Vector2f(0, settings_.thickness_ / 2));
+    stencil_.setOrigin   (sf::Vector2f(radius, radius));
 }
 
 //---------------------------------------------------------------------
@@ -113,7 +114,7 @@ ToolRect::ToolRect():
                            .isSquare_ = false, 
                            .needFill_ = false, 
                            .outlineColor_ = sf::Color::Black,
-                           .outlineThickness_ = 1}),
+                           .outlineThickness_ = 6}),
     mousePressed_(false),
     firstPoint_  (),
     preview_     (),
@@ -266,7 +267,7 @@ void ToolRect::updatePreview(sf::Vector2f rightDown)
 ToolPolyline::ToolPolyline():
     settings_(ToolSettings{.color_ = sf::Color::Black, 
                            .simpleLine_ = false, 
-                           .thickness_ = 1}),
+                           .thickness_ = 6}),
     stencil_   (),
     firstPoint_(),
     lastPoint_ (),

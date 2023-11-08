@@ -22,6 +22,8 @@ struct ControlState
 class Tool
 {
     public:
+        virtual ~Tool() = default;
+
         virtual void onMainButton       (ControlState state, sf::Vector2f position, Canvas &canvas) = 0;
         virtual void onSecondaryButton  (ControlState state, sf::Vector2f position, Canvas &canvas);
         virtual void onModifier1        (ControlState state, Canvas &canvas);
@@ -56,7 +58,7 @@ class ToolPen : public Tool
             int thickness_;
         } settings_;
 
-        sf::RectangleShape stencil_;
+        sf::CircleShape stencil_;
 
         sf::Vector2f prevPoint_;
         bool       isBrushDown_ = false;
@@ -182,6 +184,10 @@ class ToolPalette
 {
     public:
         ToolPalette(sf::Color backgroundColor, sf::Color foregroundColor = sf::Color::Black);
+        ToolPalette(const ToolPalette&)            = delete;
+
+        ToolPalette &operator=(const ToolPalette&) = delete;
+        
 
         Tool      *setActiveTool(ToolKeys key);
         Tool      *getActiveTool();

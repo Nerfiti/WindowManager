@@ -1,4 +1,3 @@
-#include "./Widgets/Windows/Windows.hpp"
 #include "./Widgets/Windows/CanvasWindow.hpp"
 
 //------------------------------------------------------------------------------------------
@@ -26,20 +25,21 @@ int main()
     MainWindow mainWindow(LinuxWindow, 0, 0, 1, 1, 0.05f, sf::Color(128, 128, 128));
     
     //Adding windows
-    ContainerWindow a(0.3f, 0.3f, 0.5f, 0.5f, 0.05f, sf::Color::Green);
-    FrameWindow b(0.3f, 0.3f, 0.5f, 0.5f, 0.1f, sf::Color::Yellow);
-    a.addWindow(&b);
-    mainWindow.addWindow(&a);
-
     FrameWindow tempWindowMenu(0, 0.05f, 1, 0.02f, 0, sf::Color(32, 32, 32));
     mainWindow.addWindow(&tempWindowMenu);
 
     FrameWindow tempWindowPalette(0, 0.07f, 0.1f, 1, 0, sf::Color(64, 64, 64));
     mainWindow.addWindow(&tempWindowPalette);
 
-    ToolPalette palette(sf::Color::White, sf::Color::Black);
-    CanvasWindow canvas(0.1f, 0.07f, 0.9f, 0.93f, 0.0f, palette);
-    mainWindow.addWindow(&canvas);
+    ToolPalette   tools(sf::Color::White, sf::Color::Black);
+    FilterPalette filters;
+
+    ContainerWindow canvasArea(0.1f, 0.07f, 0.9f, 0.93f, 0.0f);
+    CanvasWindow canvas1(0.1f, 0.1f, 0.7f, 0.7f, 0.05f, tools, filters);
+    CanvasWindow canvas2(0.4f, 0.2f, 0.5f, 0.5f, 0.05f, tools, filters);
+    mainWindow.addWindow(&canvasArea);
+    canvasArea.addWindow(&canvas1);
+    canvasArea.addWindow(&canvas2);
 
     //Main loop
     sf::Clock timer;

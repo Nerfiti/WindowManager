@@ -2,6 +2,8 @@
 
 //---------------------------------------------------------------------------
 
+static constexpr float Epsilon = 1e-8f;
+
 static float lengthInSquare(sf::Vector2f vector)
 {
     return vector.x * vector.x + vector.y * vector.y;
@@ -33,10 +35,10 @@ FrameWindow::FrameWindow(sf::Vector2f pos, sf::Vector2f size, float frameHeight,
     mouseInWindow_      (false),
     frameCaptured_      (false),
     closeButtonCaptured_(false),
-    isOpen_             (true),
-    closeButtonTexture_ ()
+    closeButtonTexture_ (),
+    isOpen_             (true)
 {
-    if (size.y)
+    if (size.y > Epsilon)
     {
         frame_.setSize(sf::Vector2f(1, frameHeight / size.y));
         closeButton_.setRadius(frameHeight / 3 / size.y);
@@ -81,7 +83,6 @@ bool FrameWindow::onMousePressed(sf::Mouse::Button key)
         if (lengthInSquare(closeButton_.getPosition() - localMousePos) < radius * radius)
         {
             closeButtonCaptured_ = true;
-            //closeButton_.setFillColor(sf::Color::Red);
         }
         else if (frame_.getGlobalBounds().contains(localMousePos))
         {
@@ -194,11 +195,12 @@ bool FrameWindow::isOpen()
 //---------------------------------------------------------------------------
 
 ContainerWindow::ContainerWindow(sf::Vector2f pos, sf::Vector2f size, float frameHeight, sf::Color color):
-    FrameWindow(pos, size, frameHeight, color)
+    FrameWindow(pos, size, frameHeight, color),
+    windows_()
     {}
 
 ContainerWindow::ContainerWindow(float posX, float posY, float width, float height, float frameHeight, sf::Color color):
-    FrameWindow(posX, posY, width, height, frameHeight, color)
+    ContainerWindow(sf::Vector2f(posX, posY), sf::Vector2f(width, height), frameHeight, color)
     {}
 
 void ContainerWindow::draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform)
@@ -215,24 +217,39 @@ void ContainerWindow::draw(sf::RenderTarget& canvas, const sf::Transform& parent
 bool ContainerWindow::onMousePressed(sf::Mouse::Button key)
 {
     bool checked = FrameWindow::onMousePressed(key);
+    if (!checked)
+        return false;
+    
+    checked = false;
 
+    std::_List_iterator<FrameWindow *> target = windows_.end();
     for (auto it = windows_.begin(); it != windows_.end(); ++it)
     {
-        if ((*it)->onMousePressed(key))
+        if (!checked && (*it)->onMousePressed(key))
         {
-            FrameWindow *activeWindow = *it;
-            windows_.erase(it);
-            windows_.insert(windows_.begin(), activeWindow);
-            return true;
+            target = it;
+            checked = true;
+            (*it)->setIsFocused(true);
+            continue;
         }
+
+        (*it)->setIsFocused(false);
     }
 
-    return checked;
+    if (target != windows_.end())
+    {
+        FrameWindow *activeWindow = *target;
+        windows_.erase(target);
+        windows_.insert(windows_.begin(), activeWindow);
+    }
+
+    return true;
 }
 
 bool ContainerWindow::onMouseMoved(int x, int y, const sf::Transform &parentTransform)
 {
-    bool checked = FrameWindow::onMouseMoved(x, y, parentTransform);
+    if (!FrameWindow::onMouseMoved(x, y, parentTransform))
+        return false;
 
     sf::Transform finalTransform = parentTransform * transform_;
     
@@ -242,7 +259,7 @@ bool ContainerWindow::onMouseMoved(int x, int y, const sf::Transform &parentTran
             return true;
     }
 
-    return checked;
+    return true;
 }
 
 bool ContainerWindow::onMouseReleased(sf::Mouse::Button key)
@@ -265,15 +282,17 @@ bool ContainerWindow::onMouseReleased(sf::Mouse::Button key)
 
 bool ContainerWindow::onKeyboardPressed(sf::Keyboard::Key key)   
 {
-    FrameWindow::onKeyboardPressed(key);
+    bool checked = FrameWindow::onKeyboardPressed(key);
 
     for (auto &it : windows_)
     {
-        if (it->onKeyboardPressed(key))
-            return true;
+        if (!it->onKeyboardPressed(key))
+            continue;
+    
+        return true;
     }
 
-    return false;
+    return checked;
 }
 
 bool ContainerWindow::onKeyboardReleased(sf::Keyboard::Key key)   
@@ -319,7 +338,7 @@ void ContainerWindow::close()
 MainWindow::MainWindow(sf::RenderWindow &LinuxWindow, sf::Vector2f pos, sf::Vector2f size, float frameHeight, sf::Color color):
     ContainerWindow(pos, size, frameHeight, color),
     LinuxWindow_(LinuxWindow),
-    timer_(sf::Vector2f(0.05, 1 - 0.05), 0.05)
+    timer_(sf::Vector2f(0.05f, 1 - 0.05f), 0.05f)
     {}
 
 MainWindow::MainWindow(sf::RenderWindow &LinuxWindow, float posX, float posY, float width, float height, float frameHeight, sf::Color color):

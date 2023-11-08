@@ -10,6 +10,8 @@
 class Widget
 {
     public:
+        virtual ~Widget() = default;
+
         virtual void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) = 0;
 
         virtual bool onMousePressed     (sf::Mouse::Button key);
@@ -18,6 +20,12 @@ class Widget
         virtual bool onKeyboardPressed  (sf::Keyboard::Key key);
         virtual bool onKeyboardReleased (sf::Keyboard::Key key);
         virtual bool onTime             (float deltaSeconds);
+    
+        bool isFocused();
+        void setIsFocused(bool isFocused);
+
+    protected:
+        bool isFocused_ = true;
 };
 
 //---------------------------------------------------------------------------

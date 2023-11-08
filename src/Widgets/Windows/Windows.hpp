@@ -12,6 +12,8 @@ class Window : public Widget
         Window(sf::Vector2f pos, sf::Vector2f size, sf::Color color = sf::Color::Black);
         Window(float posX, float posY, float width, float height, sf::Color color = sf::Color::Black);
 
+        virtual ~Window() = default;
+
         sf::Transform &Transform();
 
     protected:
@@ -28,6 +30,8 @@ class FrameWindow : public Window
         FrameWindow(sf::Vector2f pos, sf::Vector2f size, float frameHeight, sf::Color color = sf::Color::Black);
         FrameWindow(float posX, float posY, float width, float height, float frameHeight, sf::Color color = sf::Color::Black);
     
+        virtual ~FrameWindow() = default;
+
         void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
 
         bool onMousePressed     (sf::Mouse::Button key)                              override;
@@ -66,6 +70,8 @@ class ContainerWindow : public FrameWindow
         ContainerWindow(sf::Vector2f pos, sf::Vector2f size, float frameHeight, sf::Color color = sf::Color::Black);
         ContainerWindow(float posX, float posY, float width, float height, float frameHeight, sf::Color color = sf::Color::Black);
         
+        virtual ~ContainerWindow() = default;
+
         void draw(sf::RenderTarget& canvas, const sf::Transform& parentTransform = sf::Transform::Identity) override;
 
         bool onMousePressed     (sf::Mouse::Button key)                              override;

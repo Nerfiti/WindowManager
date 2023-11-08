@@ -16,7 +16,10 @@ all:
 		./src/Widgets/Canvas/Canvas.cpp   		\
 		./src/Widgets/Canvas/ToolWidgets.cpp	\
 												\
+		./src/Widgets/Canvas/ScrollBar.cpp	    \
+												\
 		./src/Tools/Tools.cpp					\
+		./src/Tools/Filters.cpp					\
 										  		\
 	$(SFMLFLAGS) $(RELEASEFLAGS)		  		\
 	-o $(TARGET)	 		      		  		\
@@ -35,9 +38,15 @@ debug:
 		./src/Widgets/Canvas/Canvas.cpp   		\
 		./src/Widgets/Canvas/ToolWidgets.cpp	\
 												\
+		./src/Widgets/Canvas/ScrollBar.cpp	    \
+												\
 		./src/Tools/Tools.cpp					\
+		./src/Tools/Filters.cpp					\
 										  		\
 	$(SFMLFLAGS) $(RELEASEFLAGS) $(DEBUGFLAGS)	\
 	-o $(TARGET)	 		      		  		\
 										
-	gdb ./$(TARGET) 
+	gdb ./$(TARGET)
+	
+run:
+	./$(TARGET)
